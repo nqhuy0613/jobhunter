@@ -12,18 +12,23 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import vn.hoidanit.jobhunter.domain.dto.ResLoginDTO;
+import vn.hoidanit.jobhunter.util.SecurityUtil;
 
 @RestController
 public class AuthController {
 
     private AuthenticationManagerBuilder authenticationManagerBuilder;
 
-    public AuthController(AuthenticationManagerBuilder authenticationManagerBuilder) {
+    private SecurityUtil securityUtil;
+
+    public AuthController(AuthenticationManagerBuilder authenticationManagerBuilder, SecurityUtil securityUtil) {
         this.authenticationManagerBuilder = authenticationManagerBuilder;
+        this.securityUtil = securityUtil;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginDTO> login(@Valid @RequestBody LoginDTO loginDTO) {
+    public ResponseEntity<ResLoginDTO> login(@Valid @RequestBody LoginDTO loginDTO) {
         // Nạp input gồm username/password vào Security
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                 loginDTO.getUsername(), loginDTO.getPassword());
@@ -34,7 +39,13 @@ public class AuthController {
         // nạp thông tin (nếu xử lý thành công) vào SecurityContext
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        return ResponseEntity.ok().body(loginDTO);
+        // tạo access token
+        String accessToken = this.securityUtil.createAccessToken(authentication);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        ResLoginDTO resLoginDTO = new ResLoginDTO();
+        resLoginDTO.setAccessToken(accessToken);
+        return ResponseEntity.ok().body(resLoginDTO);
     }
 
 }
